@@ -28,7 +28,6 @@
   </script>
 
   <style>
-    /* ===== Pastel App — full viewport ===== */
     :root{
       --bg:#0d0b14; --ink:#f7f3ff; --text:#cbbfe9; --muted:#a99bcc; --line:#3a3358;
       --g1:#211a36; --g2:#18122c; --acc:#b388ff; --acc2:#7bd0f5; --acc3:#f7b3d0;
@@ -60,6 +59,7 @@
     .bd{padding:10px 12px 16px}
 
     .filters{display:flex; flex-wrap:wrap; gap:10px; padding:12px; background:rgba(255,255,255,.05); border-radius:14px; border:1px solid var(--line)}
+    .filters label{font-size:.85rem; opacity:.8; margin-right:.4rem}
     .filters input,.filters select{appearance:none; background:#140f22; color:var(--ink); border:1px solid var(--line); border-radius:12px; padding:.7rem .9rem; min-width:200px}
     .filters input:focus,.filters select:focus{outline:2px solid var(--acc); outline-offset:2px}
 
@@ -70,7 +70,6 @@
     tbody tr:hover{background:rgba(179,136,255,.08)}
     td:first-child{color:var(--ink)}
 
-    /* Mobile: card list under 720px */
     @media (max-width: 719px){
       table{display:none}
       .cards{display:grid;gap:12px;padding:12px}
@@ -81,16 +80,23 @@
       .kv b{color:#fff}
     }
 
-    /* Light theme toggle (optional) */
     .theme-toggle{margin-left:auto}
     .btn{background:#140f22; color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:.55rem .8rem; cursor:pointer}
     body.light{color-scheme: light; background:linear-gradient(180deg,#faf7ff 0%, #f3f6ff 100%)}
-    body.light :root{}
     body.light .card{background:#ffffffcc; border-color:#e8e0ff}
     body.light .filters{background:#ffffffd9; border-color:#e8e0ff}
     body.light thead th{background:linear-gradient(90deg, #e6ddff, #ffd6eb, #dfffe6); color:#2c1a45}
     body.light td:first-child, body.light h1, body.light h2, body.light h3, body.light h4{color:#2c1a45}
     body.light .row{background:#fff}
+
+    /* Posts grid */
+    .posts-grid { display:grid; gap:16px; margin-top:1rem; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .post-card { display:block; text-decoration:none; color:var(--ink); background:linear-gradient(180deg,var(--g1),var(--g2)); border:1px solid var(--line); border-radius:16px; padding:14px; transition:transform .2s ease, background .2s ease; }
+    .post-card:hover { transform: translateY(-3px); background:linear-gradient(180deg,#2a2044,#1d1730); }
+    .post-card h4 { margin:.2rem 0 .4rem; font-size:1.05rem; color:var(--ink) }
+    .post-card p { margin:0; color:var(--text) }
+    .post-meta { font-size:.8rem; color:var(--muted) }
+    .loader { text-align:center; margin:1.3rem 0; color:var(--muted) }
   </style>
 </head>
 <body>
@@ -117,14 +123,14 @@
           <div class="filters" role="region" aria-label="Meditasyon Türleri Filtreleri">
             <label for="typeSearch">Arama</label>
             <input type="search" id="typeSearch" placeholder="Ara: zazen, nefes, orman…" aria-label="Metin arama">
-            <label class="sr-only" for="typeDifficulty">Zorluk</label>
+            <label for="typeDifficulty">Zorluk</label>
             <select id="typeDifficulty" aria-label="Zorluk seç">
               <option value="">Zorluk: Hepsi</option>
               <option value="kolay">Kolay</option>
               <option value="orta">Orta</option>
               <option value="zor">Zor</option>
             </select>
-            <label class="sr-only" for="typeDuration">Süre</label>
+            <label for="typeDuration">Süre</label>
             <select id="typeDuration" aria-label="Süre aralığı seç">
               <option value="">Süre: Hepsi</option>
               <option value="0-10">≤10 dk</option>
@@ -135,7 +141,11 @@
           </div>
 
           <div class="table-wrap">
-            $1
+            <table id="typesTable">
+              <thead>
+                <tr><th>🧘 Tür Adı</th><th>⏱️ Süre</th><th>🌿 Ortam</th><th>💫 Ana Etki</th><th>🔥 Zorluk</th></tr>
+              </thead>
+              <tbody>
                 <tr data-dmin="20" data-dmax="40" data-diff="orta"><td><strong>Zazen (Zen)</strong></td><td>20–40 dk</td><td>Sessiz oda, minimal alan</td><td>Zihin duruluğu, farkındalık</td><td>Orta</td></tr>
                 <tr data-dmin="45" data-dmax="180" data-diff="zor"><td><strong>Vipassana</strong></td><td>45 dk+</td><td>Sessizlik, doğal alan</td><td>Duygu ve düşünce gözlemi</td><td>Zor</td></tr>
                 <tr data-dmin="5" data-dmax="30" data-diff="kolay"><td><strong>Mindfulness</strong></td><td>5–30 dk</td><td>Her yer (ofis, ev, yürüyüş)</td><td>Şu ana odaklanma, stres düşürme</td><td>Kolay</td></tr>
@@ -145,7 +155,7 @@
                 <tr data-dmin="5" data-dmax="15" data-diff="orta"><td><strong>Trataka (Mum Odaklı)</strong></td><td>5–15 dk</td><td>Karanlık oda, mum alevi</td><td>Konsantrasyon, göz odak gücü</td><td>Orta</td></tr>
                 <tr data-dmin="30" data-dmax="60" data-diff="zor"><td><strong>Kundalini Meditasyonu</strong></td><td>30–60 dk</td><td>Oturarak, rahat kıyafet</td><td>Enerji yükselmesi, farkındalık patlaması</td><td>Zor</td></tr>
                 <tr data-dmin="15" data-dmax="40" data-diff="orta"><td><strong>Chakra Meditasyonu</strong></td><td>15–40 dk</td><td>Renk/ışık destekli sessiz alan</td><td>Enerji merkezlerini dengeleme</td><td>Orta</td></tr>
-                <tr data-dmin="10" data-dmax="30" data-diff="kolay"><td><strong>Yürüyüş Meditasyonu (Kinhin)</strong></td><td>10–30 dk</td><td>Doğa veya uzun koridor</td><td>Denge, bedensel farkındalık</td><td>Kolay</td></tr>
+                <tr data-dmin="10" data-dmax="30" data-diff="kolay"><td><strong>Yürüyüş Meditasyonu (Kinhin)</strong></td><td>10–30 dk</td><td>Doğa veya uzun koridor</td><td>Beden farkındalığı</td><td>Kolay</td></tr>
                 <tr data-dmin="20" data-dmax="45" data-diff="orta"><td><strong>Qi Gong / Tai Chi</strong></td><td>20–45 dk</td><td>Açık hava</td><td>Yaşam enerjisi (Chi) dolaşımı</td><td>Orta</td></tr>
                 <tr data-dmin="15" data-dmax="60" data-diff="zor"><td><strong>Sufi Zikir / Semâ</strong></td><td>15–60 dk</td><td>Manevi atmosfer, topluluk</td><td>Ruhsal arınma, aşk bilinci</td><td>Zor</td></tr>
                 <tr data-dmin="5" data-dmax="10" data-diff="kolay"><td><strong>Kalp Koherans</strong></td><td>5–10 dk</td><td>Sessiz, rahat koltuk</td><td>Kalp-beyin senkronizasyonu</td><td>Kolay</td></tr>
@@ -156,7 +166,7 @@
                 <tr data-dmin="15" data-dmax="60" data-diff="kolay"><td><strong>Yaratıcı Akış (Mandala/Boyama)</strong></td><td>15–60 dk</td><td>Sessiz yaratım alanı</td><td>Akış (flow), içsel ifade</td><td>Kolay</td></tr>
                 <tr data-dmin="10" data-dmax="30" data-diff="kolay"><td><strong>Rehberli Görselleştirme</strong></td><td>10–30 dk</td><td>Kulaklık, rahat ortam</td><td>Niyet, motivasyon, vizyon</td><td>Kolay</td></tr>
                 <tr data-dmin="1440" data-dmax="14400" data-diff="zor"><td><strong>Sessizlik İnzivası (Retreat)</strong></td><td>1–10 gün</td><td>İnziva alanı</td><td>Derin farkındalık, ego çözülmesi</td><td>Zor</td></tr>
-              $2
+              </tbody>
             </table>
             <div class="cards" id="typesCards" aria-hidden="true"></div>
           </div>
@@ -171,14 +181,14 @@
           <div class="filters" role="region" aria-label="Amaçlara Göre Filtreler">
             <label for="goalSearch">Arama</label>
             <input type="search" id="goalSearch" placeholder="Ara: stres, uyku, şifa…" aria-label="Amaç arama">
-            <label class="sr-only" for="goalDifficulty">Zorluk</label>
+            <label for="goalDifficulty">Zorluk</label>
             <select id="goalDifficulty" aria-label="Zorluk seç (amaç)">
               <option value="">Zorluk: Hepsi</option>
               <option value="kolay">Kolay</option>
               <option value="orta">Orta</option>
               <option value="zor">Zor</option>
             </select>
-            <label class="sr-only" for="goalTag">Etiket</label>
+            <label for="goalTag">Etiket</label>
             <select id="goalTag" aria-label="Etiket seç">
               <option value="">Etiket: Hepsi</option>
               <option>stres</option><option>uyku</option><option>öz-sevgi</option>
@@ -191,28 +201,30 @@
           </div>
 
           <div class="table-wrap">
-            $1
-                <tr data-tags="stres denge" data-diff="kolay"><td>Stres Azaltmak</td><td>Mindfulness, Nefes, Yoga Nidra</td><td>Parasempatik sistemi aktive eder.</td><td>Kolay</td></tr>
-                <tr data-tags="uyku bilinçaltı" data-diff="kolay"><td>Uykuya Geçiş</td><td>Yoga Nidra, Rehberli Görselleştirme</td><td>Beyni alfa–teta dalgalarına indirir.</td><td>Kolay</td></tr>
-                <tr data-tags="öz-sevgi aşk" data-diff="kolay"><td>Öz Şefkat</td><td>Metta, Kalp Koherans</td><td>Duygusal yumuşama, kabul.</td><td>Kolay</td></tr>
-                <tr data-tags="enerji motivasyon" data-diff="orta"><td>Enerji Artırmak</td><td>Kundalini, Pranayama, Qi Gong</td><td>Prana/Chi akışını hızlandırır.</td><td>Orta</td></tr>
-                <tr data-tags="temizlik aura" data-diff="orta"><td>Negatif Enerjiyi Temizlemek</td><td>Ses Banyosu, Chakra</td><td>Frekanssal arınma, dengeleme.</td><td>Orta</td></tr>
-                <tr data-tags="konsantrasyon zihin" data-diff="zor"><td>Düşünce Kontrolü</td><td>Zazen, Trataka</td><td>Gürültüyü azaltır, odak keskinleşir.</td><td>Zor</td></tr>
-                <tr data-tags="kaygı denge" data-diff="kolay"><td>Kaygı/Panik</td><td>Box Breathing, Mindfulness</td><td>Kalp atışı ve nefes regülasyonu.</td><td>Kolay</td></tr>
-                <tr data-tags="sezgi spiritüel" data-diff="orta"><td>Sezgi</td><td>Görselleştirme, Üçüncü Göz</td><td>İçsel rehberlik, sezgi kanalları.</td><td>Orta</td></tr>
-                <tr data-tags="bolluk niyet" data-diff="kolay"><td>Bolluk/Manifestasyon</td><td>Niyet, Görselleştirme, Kalp Odaklı</td><td>Duygu–imge–niyet uyumu.</td><td>Kolay</td></tr>
-                <tr data-tags="ego spiritüel" data-diff="zor"><td>Kendini Tanıma/Ego</td><td>Vipassana, Sessizlik İnvazası</td><td>Benlik gözlemi, çözülme.</td><td>Zor</td></tr>
-                <tr data-tags="yaratıcılık akış" data-diff="kolay"><td>Yaratıcılık</td><td>Flow, Mandala/Renk</td><td>Sağ yarımküre aktivasyonu.</td><td>Kolay</td></tr>
-                <tr data-tags="aşk öz-sevgi" data-diff="orta"><td>Aşk Enerjisi</td><td>Kalp Koherans, Metta, Tantra</td><td>Empati ve rezonans.</td><td>Orta</td></tr>
-                <tr data-tags="motivasyon enerji" data-diff="orta"><td>Motivasyon</td><td>Mantra, Kundalini, Güçlü Nefes</td><td>Merkez aktivasyonu.</td><td>Orta</td></tr>
-                <tr data-tags="konsantrasyon çalışma" data-diff="orta"><td>Konsantrasyon</td><td>Trataka, Mantra, Nefes Sayma</td><td>Tek nokta odak becerisi.</td><td>Orta</td></tr>
-                <tr data-tags="spiritüel uyanış" data-diff="zor"><td>Spiritüel Uyanış</td><td>Kabbalistik, Hermetik, Kundalini, Zikir</td><td>Farkındalık sıçraması.</td><td>Zor</td></tr>
-                <tr data-tags="travma güven" data-diff="kolay"><td>Travma Sonrası Şifa</td><td>Görselleştirme, Kalp Odaklı, Yoga Nidra</td><td>Güvenli alan, regülasyon.</td><td>Kolay</td></tr>
-                <tr data-tags="denge günlük" data-diff="kolay"><td>Günlük Denge</td><td>Mindfulness, Yürüyüş, Günlük Aktivite</td><td>Günlük yaşamda farkındalık.</td><td>Kolay</td></tr>
-                <tr data-tags="sabır disiplin" data-diff="orta"><td>Sabır/Direnç</td><td>Vipassana, Metta, Mantra</td><td>Zihin dayanıklılığı.</td><td>Orta</td></tr>
-                <tr data-tags="doğa topraklanma" data-diff="kolay"><td>Doğa ile Birleşmek</td><td>Doğa, Yürüyüş, Ağaç Odaklı</td><td>Topraklanma, huzur.</td><td>Kolay</td></tr>
-                <tr data-tags="bilinçaltı temizlik" data-diff="orta"><td>Bilinçaltı Temizliği</td><td>Yoga Nidra, Görselleştirme, Renk</td><td>Duygusal dönüşüm.</td><td>Orta</td></tr>
-              $2
+            <table id="goalsTable">
+              <thead><tr><th>🎯 Amaç</th><th>🧘 Türler</th><th>💫 Etki</th><th>🔥 Zorluk</th></tr></thead>
+              <tbody>
+                <tr data-tags="stres denge" data-diff="kolay"><td>Stres Azaltmak</td><td>Mindfulness, Nefes, Yoga Nidra</td><td>Parasempatik sistem aktivasyonu</td><td>Kolay</td></tr>
+                <tr data-tags="uyku bilinçaltı" data-diff="kolay"><td>Uykuya Geçiş</td><td>Yoga Nidra, Rehberli Görselleştirme</td><td>Alfa–teta dalgaları</td><td>Kolay</td></tr>
+                <tr data-tags="öz-sevgi aşk" data-diff="kolay"><td>Öz Şefkat</td><td>Metta, Kalp Koherans</td><td>Duygusal yumuşama, kabul</td><td>Kolay</td></tr>
+                <tr data-tags="enerji motivasyon" data-diff="orta"><td>Enerji Artırmak</td><td>Kundalini, Pranayama, Qi Gong</td><td>Prana/Chi akışını hızlandırır</td><td>Orta</td></tr>
+                <tr data-tags="temizlik aura" data-diff="orta"><td>Negatif Enerjiyi Temizlemek</td><td>Ses Banyosu, Chakra</td><td>Frekanssal arınma, dengeleme</td><td>Orta</td></tr>
+                <tr data-tags="konsantrasyon zihin" data-diff="zor"><td>Düşünce Kontrolü</td><td>Zazen, Trataka</td><td>Gürültüyü azaltır, odak keskinleşir</td><td>Zor</td></tr>
+                <tr data-tags="kaygı denge" data-diff="kolay"><td>Kaygı/Panik</td><td>Box Breathing, Mindfulness</td><td>Kalp atışı ve nefes regülasyonu</td><td>Kolay</td></tr>
+                <tr data-tags="sezgi spiritüel" data-diff="orta"><td>Sezgi</td><td>Görselleştirme, Üçüncü Göz</td><td>İçsel rehberlik</td><td>Orta</td></tr>
+                <tr data-tags="bolluk niyet" data-diff="kolay"><td>Bolluk/Manifestasyon</td><td>Niyet, Görselleştirme, Kalp Odaklı</td><td>Duygu–imge–niyet uyumu</td><td>Kolay</td></tr>
+                <tr data-tags="ego spiritüel" data-diff="zor"><td>Kendini Tanıma/Ego</td><td>Vipassana, Sessizlik İnzivası</td><td>Benlik gözlemi, çözülme</td><td>Zor</td></tr>
+                <tr data-tags="yaratıcılık akış" data-diff="kolay"><td>Yaratıcılık</td><td>Flow, Mandala/Renk</td><td>Sağ yarımküre aktivasyonu</td><td>Kolay</td></tr>
+                <tr data-tags="aşk öz-sevgi" data-diff="orta"><td>Aşk Enerjisi</td><td>Kalp Koherans, Metta, Tantra</td><td>Empati ve rezonans</td><td>Orta</td></tr>
+                <tr data-tags="motivasyon enerji" data-diff="orta"><td>Motivasyon</td><td>Mantra, Kundalini, Güçlü Nefes</td><td>Merkez aktivasyonu</td><td>Orta</td></tr>
+                <tr data-tags="konsantrasyon çalışma" data-diff="orta"><td>Konsantrasyon</td><td>Trataka, Mantra, Nefes Sayma</td><td>Tek nokta odak</td><td>Orta</td></tr>
+                <tr data-tags="spiritüel uyanış" data-diff="zor"><td>Spiritüel Uyanış</td><td>Kabbalistik, Hermetik, Kundalini, Zikir</td><td>Farkındalık sıçraması</td><td>Zor</td></tr>
+                <tr data-tags="travma güven" data-diff="kolay"><td>Travma Sonrası Şifa</td><td>Görselleştirme, Kalp Odaklı, Yoga Nidra</td><td>Güvenli alan, regülasyon</td><td>Kolay</td></tr>
+                <tr data-tags="denge günlük" data-diff="kolay"><td>Günlük Denge</td><td>Mindfulness, Yürüyüş, Günlük Aktivite</td><td>Yaşama entegrasyon</td><td>Kolay</td></tr>
+                <tr data-tags="sabır disiplin" data-diff="orta"><td>Sabır/Direnç</td><td>Vipassana, Metta, Mantra</td><td>Zihin dayanıklılığı</td><td>Orta</td></tr>
+                <tr data-tags="doğa topraklanma" data-diff="kolay"><td>Doğa ile Birleşmek</td><td>Doğa, Yürüyüş, Ağaç Odaklı</td><td>Topraklanma, huzur</td><td>Kolay</td></tr>
+                <tr data-tags="bilinçaltı temizlik" data-diff="orta"><td>Bilinçaltı Temizliği</td><td>Yoga Nidra, Görselleştirme, Renk</td><td>Duygusal dönüşüm</td><td>Orta</td></tr>
+              </tbody>
             </table>
             <div class="cards" id="goalsCards" aria-hidden="true"></div>
           </div>
@@ -240,56 +252,42 @@
   </div>
 
   <script>
-    // Theme toggle
+    // Tema
     const themeBtn = document.getElementById('themeBtn');
     if(themeBtn){ themeBtn.addEventListener('click', ()=>{ const light = document.body.classList.toggle('light'); themeBtn.setAttribute('aria-pressed', light ? 'true' : 'false'); }); }
 
-    // Helpers
-    function inRange(min, max, range){ if(!range) return true; const [rmin, rmax] = range.split('-').map(Number); return (min <= rmax && max >= rmin); }
+    // Yardımcılar
+    function inRange(min, max, range){ if(!range) return true; const parts = range.split('-'); const rmin = parseInt(parts[0],10); const rmax = parseInt(parts[1],10); return (min <= rmax && max >= rmin); }
     function includesAll(hay, needles){ return needles.every(n=> hay.indexOf(n) !== -1); }
     function txt(n){ return (n.textContent||'').toLowerCase(); }
 
-    // Build card clones for mobile
+    // Mobile kartlar
     function buildCards(tableId, cardsId, mapFn){
-      const tbody=document.querySelector(`#${tableId} tbody`);
+      const tbody=document.querySelector('#'+tableId+' tbody');
       const cards=document.getElementById(cardsId);
       if(!tbody||!cards) return; cards.innerHTML='';
       Array.from(tbody.rows).forEach((tr)=>{ cards.appendChild(mapFn(tr)); });
     }
-
     function syncCards(tableId,cardsId,mapFn){
-      const tbody=document.querySelector(`#${tableId} tbody`);
+      const tbody=document.querySelector('#'+tableId+' tbody');
       const cards=document.getElementById(cardsId);
       if(!tbody||!cards) return; cards.innerHTML='';
       Array.from(tbody.rows).forEach(tr=>{ if(tr.style.display !== 'none') cards.appendChild(mapFn(tr)); });
     }
-
     function typesRowToCard(tr){
       const el=document.createElement('div'); el.className='row'; const c=tr.children;
-      el.innerHTML=`<h4>${c[0].innerText}</h4>
-        <div class="kvs">
-          <div class="kv"><b>Süre:</b> ${c[1].innerText}</div>
-          <div class="kv"><b>Ortam:</b> ${c[2].innerText}</div>
-          <div class="kv"><b>Etki:</b> ${c[3].innerText}</div>
-          <div class="kv"><b>Zorluk:</b> ${c[4].innerText}</div>
-        </div>`; return el;
+      el.innerHTML='<h4>'+c[0].innerText+'</h4>\n        <div class="kvs">\n          <div class="kv"><b>Süre:</b> '+c[1].innerText+'</div>\n          <div class="kv"><b>Ortam:</b> '+c[2].innerText+'</div>\n          <div class="kv"><b>Etki:</b> '+c[3].innerText+'</div>\n          <div class="kv"><b>Zorluk:</b> '+c[4].innerText+'</div>\n        </div>'; return el;
     }
     function goalsRowToCard(tr){
       const el=document.createElement('div'); el.className='row'; const c=tr.children;
-      el.innerHTML=`<h4>${c[0].innerText}</h4>
-        <div class="kvs">
-          <div class="kv"><b>Türler:</b> ${c[1].innerText}</div>
-          <div class="kv"><b>Etki:</b> ${c[2].innerText}</div>
-          <div class="kv"><b>Zorluk:</b> ${c[3].innerText}</div>
-        </div>`; return el;
+      el.innerHTML='<h4>'+c[0].innerText+'</h4>\n        <div class="kvs">\n          <div class="kv"><b>Türler:</b> '+c[1].innerText+'</div>\n          <div class="kv"><b>Etki:</b> '+c[2].innerText+'</div>\n          <div class="kv"><b>Zorluk:</b> '+c[3].innerText+'</div>\n        </div>'; return el;
     }
 
-    // Types filtering
+    // Filtreler
     const typeSearch=document.getElementById('typeSearch');
     const typeDifficulty=document.getElementById('typeDifficulty');
     const typeDuration=document.getElementById('typeDuration');
     const typesRows=Array.from(document.querySelectorAll('#typesTable tbody tr'));
-
     function filterTypes(){
       const q=(typeSearch.value||'').toLowerCase().trim();
       const diff=(typeDifficulty.value||'').toLowerCase();
@@ -298,18 +296,16 @@
         const text=txt(row), rdiff=row.dataset.diff, dmin=parseInt(row.dataset.dmin,10), dmax=parseInt(row.dataset.dmax,10);
         const matchText=!q || includesAll(text, q.split(/\s+/));
         const matchDiff=!diff || rdiff===diff;
-        const matchDur=inRange(dmin,dmax,dur);
+        const matchDur=!dur || inRange(dmin,dmax,dur);
         row.style.display=(matchText && matchDiff && matchDur)?'':'none';
       });
       syncCards('typesTable','typesCards', typesRowToCard);
     }
 
-    // Goals filtering
     const goalSearch=document.getElementById('goalSearch');
     const goalDifficulty=document.getElementById('goalDifficulty');
     const goalTag=document.getElementById('goalTag');
     const goalRows=Array.from(document.querySelectorAll('#goalsTable tbody tr'));
-
     function filterGoals(){
       const q=(goalSearch.value||'').toLowerCase().trim();
       const diff=(goalDifficulty.value||'').toLowerCase();
@@ -324,88 +320,53 @@
       syncCards('goalsTable','goalsCards', goalsRowToCard);
     }
 
-    // Init
     buildCards('typesTable','typesCards', typesRowToCard);
     buildCards('goalsTable','goalsCards', goalsRowToCard);
     [typeSearch,typeDifficulty,typeDuration].forEach(el=> el.addEventListener('input', filterTypes));
     [goalSearch,goalDifficulty,goalTag].forEach(el=> el.addEventListener('input', filterGoals));
     filterTypes(); filterGoals();
-  </script>
-  
-  <script>
-    // === Config — fill with your Blogger blog URL and tag ===
+
+    // === Infinite Scroll Blogger Feed ===
     const BLOG_URL = 'https://BLOG_ADINIZ.blogspot.com'; // <- değiştir
     const TAG = 'Meditasyon';
-
-    // Infinite scroll state
-    let startIndex = 1; // Blogger feed index starts at 1
-    let loading = false;
-    let endReached = false;
+    let startIndex = 1; let endReached = false; let loading = false;
 
     async function loadPosts() {
-      if (loading || endReached) return;
-      loading = true;
+      if (loading || endReached) return; loading = true;
       const loader = document.getElementById('loader');
       loader.style.display = 'block';
-
-      const url = `${BLOG_URL}/feeds/posts/default/-/${encodeURIComponent(TAG)}?alt=json&max-results=6&start-index=${startIndex}`;
+      const url = BLOG_URL + '/feeds/posts/default/-/' + encodeURIComponent(TAG) + '?alt=json&max-results=6&start-index=' + startIndex;
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        const entries = data.feed?.entry || [];
+        const entries = (data.feed && data.feed.entry) ? data.feed.entry : [];
         const container = document.getElementById('postsList');
-
-        entries.forEach(entry => {
-          const title = entry.title?.$t || 'Başlık';
-          const link = (entry.link||[]).find(l => l.rel === 'alternate')?.href || '#';
-          const raw = (entry.content?.$t || entry.summary?.$t || '').replace(/<[^>]+>/g,'');
+        entries.forEach(function(entry){
+          const title = (entry.title && entry.title.$t) ? entry.title.$t : 'Başlık';
+          const linkObj = (entry.link||[]).find(function(l){return l.rel === 'alternate'});
+          const link = linkObj ? linkObj.href : '#';
+          const raw = ((entry.content && entry.content.$t) || (entry.summary && entry.summary.$t) || '').replace(/<[^>]+>/g,'');
           const snippet = raw.length > 140 ? raw.slice(0,140) + '…' : raw;
-          const published = entry.published?.$t ? new Date(entry.published.$t) : null;
+          const published = (entry.published && entry.published.$t) ? new Date(entry.published.$t) : null;
           const card = document.createElement('a');
-          card.href = link; card.className = 'post-card'; card.target = '_blank'; rel = 'noopener';
-          card.innerHTML = `
-            <div class="post-meta">${published ? published.toLocaleDateString('tr-TR') : ''}</div>
-            <h4>${title}</h4>
-            <p>${snippet}</p>`;
+          card.href = link; card.className = 'post-card'; card.target = '_blank'; card.rel = 'noopener noreferrer';
+          card.innerHTML = '<div class="post-meta">'+ (published ? published.toLocaleDateString('tr-TR') : '') +'</div>'+'<h4>'+ title +'</h4>'+'<p>'+ snippet +'</p>';
           container.appendChild(card);
         });
-
-        if (entries.length >= 6) {
-          startIndex += 6;
-          loader.textContent = 'Daha fazla yükleniyor…';
-        } else {
-          endReached = true;
-          loader.textContent = 'Tüm yazılar yüklendi.';
-        }
+        if (entries.length >= 6) { startIndex += 6; loader.textContent = 'Daha fazla yükleniyor…'; }
+        else { endReached = true; loader.textContent = 'Tüm yazılar yüklendi.'; }
       } catch (err) {
-        const loader = document.getElementById('loader');
-        loader.textContent = 'Yazılar yüklenemedi 😞';
+        document.getElementById('loader').textContent = 'Yazılar yüklenemedi 😞';
         console.error(err);
-      } finally {
-        loading = false;
-      }
+      } finally { loading = false; }
     }
 
-    // Infinite scroll trigger
-    function onScroll(){
-      const nearBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 1200);
-      if (nearBottom) loadPosts();
-    }
-    window.addEventListener('scroll', onScroll, {passive:true});
-
-    // Kickoff
+    const io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting) loadPosts(); });
+    }, {root:null, rootMargin:'1200px', threshold:0});
+    io.observe(document.getElementById('loader'));
     loadPosts();
   </script>
-
-  <style>
-    .posts-grid { display:grid; gap:16px; margin-top:1rem; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-    .post-card { display:block; text-decoration:none; color:var(--ink); background:linear-gradient(180deg,var(--g1),var(--g2)); border:1px solid var(--line); border-radius:16px; padding:14px; transition:transform .2s ease, background .2s ease; }
-    .post-card:hover { transform: translateY(-3px); background:linear-gradient(180deg,#2a2044,#1d1730); }
-    .post-card h4 { margin:.2rem 0 .4rem; font-size:1.05rem; color:var(--ink) }
-    .post-card p { margin:0; color:var(--text) }
-    .post-meta { font-size:.8rem; color:var(--muted) }
-    .loader { text-align:center; margin:1.3rem 0; color:var(--muted) }
-  </style>
 </body>
 </html>
