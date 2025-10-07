@@ -97,9 +97,12 @@
   <div class="app">
     <div class="inner">
       <header>
-        <h1>Tabirly Meditasyon Türleri Rehberi</h1>
-        <h2>Pozisyonlara ve Amaçlara Göre Filtrelenebilir Tablo</h2>
+        <h1>🧘‍♀️ Meditasyon Türleri Rehberi</h1>
+        <h2>H2 • Pozisyonlara ve Amaçlara Göre Filtrelenebilir Tablo</h2>
+        <p>Pastel arayüz, mobil güvenli tasarım ve canlı filtreler. <span class="chip">zorluk</span> · <span class="chip">süre</span> · <span class="chip">niyet</span></p>
         <div class="meta">
+          <span class="chip">TR</span>
+          <span class="chip">GitHub Pages</span>
           <button id="themeBtn" class="btn theme-toggle" aria-pressed="false" aria-label="Tema değiştir">🌗 Tema</button>
         </div>
       </header>
@@ -107,10 +110,10 @@
       <!-- SECTION A: Türler -->
       <section class="card" id="types">
         <div class="hd">
-          <h2>Meditasyon Türleri (Pozisyon / Teknik)</h2>
+          <h2>H2 • 🌿 Meditasyon Türleri (Pozisyon / Teknik)</h2>
         </div>
         <div class="bd">
-          <h3>Filtreler</h3>
+          <h3>H3 • Filtreler</h3>
           <div class="filters" role="region" aria-label="Meditasyon Türleri Filtreleri">
             <label for="typeSearch">Arama</label>
             <input type="search" id="typeSearch" placeholder="Ara: zazen, nefes, orman…" aria-label="Metin arama">
@@ -166,9 +169,9 @@
 
       <!-- SECTION B: Amaçlar -->
       <section class="card" id="goals">
-        <div class="hd"><h2>🎯 Amaçlara Göre Meditasyon</h2></div>
+        <div class="hd"><h2>H2 • 🎯 Amaçlara Göre Meditasyon</h2></div>
         <div class="bd">
-          <h3>Filtreler</h3>
+          <h3>H3 • Filtreler</h3>
           <div class="filters" role="region" aria-label="Amaçlara Göre Filtreler">
             <label for="goalSearch">Arama</label>
             <input type="search" id="goalSearch" placeholder="Ara: stres, uyku, şifa…" aria-label="Amaç arama">
@@ -222,11 +225,21 @@
         </div>
       </section>
 
+      <!-- SECTION C: Meditasyon Etiketli Yazılar (Infinite Scroll) -->
+      <section class="card" id="related-posts">
+        <div class="hd"><h2>H2 • 🪶 Meditasyon Etiketli Yazılar</h2></div>
+        <div class="bd">
+          <h3>H3 • Son Yayınlar</h3>
+          <div id="postsList" class="posts-grid" aria-live="polite"></div>
+          <div id="loader" class="loader" role="status">Yükleniyor…</div>
+        </div>
+      </section>
+
       <footer style="margin-top:22px">
-        <h3>SSS</h3>
-        <h4>Günde kaç dakika?</h4>
+        <h3>H3 • SSS</h3>
+        <h4>H4 • Günde kaç dakika?</h4>
         <p>5–10 dk ile başla; her hafta +5 dk.</p>
-        <h4>Hangi pozisyon en iyi?</h4>
+        <h4>H4 • Hangi pozisyon en iyi?</h4>
         <p>Rahat ve sürdürülebilir olan.</p>
       </footer>
     </div>
@@ -324,5 +337,81 @@
     [goalSearch,goalDifficulty,goalTag].forEach(el=> el.addEventListener('input', filterGoals));
     filterTypes(); filterGoals();
   </script>
+  
+  <script>
+    // === Config — fill with your Blogger blog URL and tag ===
+    const BLOG_URL = 'https://BLOG_ADINIZ.blogspot.com'; // <- değiştir
+    const TAG = 'Meditasyon';
+
+    // Infinite scroll state
+    let startIndex = 1; // Blogger feed index starts at 1
+    let loading = false;
+    let endReached = false;
+
+    async function loadPosts() {
+      if (loading || endReached) return;
+      loading = true;
+      const loader = document.getElementById('loader');
+      loader.style.display = 'block';
+
+      const url = `${BLOG_URL}/feeds/posts/default/-/${encodeURIComponent(TAG)}?alt=json&max-results=6&start-index=${startIndex}`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const entries = data.feed?.entry || [];
+        const container = document.getElementById('postsList');
+
+        entries.forEach(entry => {
+          const title = entry.title?.$t || 'Başlık';
+          const link = (entry.link||[]).find(l => l.rel === 'alternate')?.href || '#';
+          const raw = (entry.content?.$t || entry.summary?.$t || '').replace(/<[^>]+>/g,'');
+          const snippet = raw.length > 140 ? raw.slice(0,140) + '…' : raw;
+          const published = entry.published?.$t ? new Date(entry.published.$t) : null;
+          const card = document.createElement('a');
+          card.href = link; card.className = 'post-card'; card.target = '_blank'; rel = 'noopener';
+          card.innerHTML = `
+            <div class="post-meta">${published ? published.toLocaleDateString('tr-TR') : ''}</div>
+            <h4>${title}</h4>
+            <p>${snippet}</p>`;
+          container.appendChild(card);
+        });
+
+        if (entries.length >= 6) {
+          startIndex += 6;
+          loader.textContent = 'Daha fazla yükleniyor…';
+        } else {
+          endReached = true;
+          loader.textContent = 'Tüm yazılar yüklendi.';
+        }
+      } catch (err) {
+        const loader = document.getElementById('loader');
+        loader.textContent = 'Yazılar yüklenemedi 😞';
+        console.error(err);
+      } finally {
+        loading = false;
+      }
+    }
+
+    // Infinite scroll trigger
+    function onScroll(){
+      const nearBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 1200);
+      if (nearBottom) loadPosts();
+    }
+    window.addEventListener('scroll', onScroll, {passive:true});
+
+    // Kickoff
+    loadPosts();
+  </script>
+
+  <style>
+    .posts-grid { display:grid; gap:16px; margin-top:1rem; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .post-card { display:block; text-decoration:none; color:var(--ink); background:linear-gradient(180deg,var(--g1),var(--g2)); border:1px solid var(--line); border-radius:16px; padding:14px; transition:transform .2s ease, background .2s ease; }
+    .post-card:hover { transform: translateY(-3px); background:linear-gradient(180deg,#2a2044,#1d1730); }
+    .post-card h4 { margin:.2rem 0 .4rem; font-size:1.05rem; color:var(--ink) }
+    .post-card p { margin:0; color:var(--text) }
+    .post-meta { font-size:.8rem; color:var(--muted) }
+    .loader { text-align:center; margin:1.3rem 0; color:var(--muted) }
+  </style>
 </body>
 </html>
