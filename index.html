@@ -324,98 +324,109 @@
     filterTypes(); filterGoals();
 
     // === Infinite Scroll Blogger Feed ===
-<!-- === Infinite Scroll Blogger Feed (JSONP, GitHub uyumlu) === -->
 <script>
-  const BLOG_BASE   = 'https://tr.tabirly.com';   // Blogger custom domain
-  const TAG         = 'meditasyon';               // Blogger etiket adı (Label)
-  const PAGE_SIZE   = 6;
+  // === Blogger Etiketli Yazılar (Infinite Scroll + JSONP fallback) ===
+  const BLOG_HOST = 'https://tr.tabirly.com';   // <-- alan adın (sonunda / yok)
+  const TAG       = 'meditasyon';               // <-- etiket adın (küçük harf)
+  const PAGE_SIZE = 6;
 
   let startIndex = 1;
   let endReached = false;
   let loading = false;
-  let cbId = 0;
 
-  const loaderEl = document.getElementById('loader');
   const listEl   = document.getElementById('postsList');
+  const loaderEl = document.getElementById('loader');
 
-  // JSONP helper (CORS yok; GitHub Pages için şart)
-  function jsonp(url){
-    return new Promise((resolve, reject) => {
-      const cbName = '__blog_cb_' + (cbId++);
-      const s = document.createElement('script');
+  function feedUrlJSON(start) {
+    // summary = daha hafif içerik; default da olur ama summary hızlıdır
+    return `${BLOG_HOST}/feeds/posts/summary/-/${encodeURIComponent(TAG)}?alt=json&max-results=${PAGE_SIZE}&start-index=${start}`;
+  }
+  function feedUrlJSONP(start, cbName) {
+    return `${BLOG_HOST}/feeds/posts/summary/-/${encodeURIComponent(TAG)}?alt=json-in-script&callback=${cbName}&max-results=${PAGE_SIZE}&start-index=${start}`;
+  }
 
-      window[cbName] = (data) => {
-        resolve(data);
-        delete window[cbName];
-        s.remove();
+  function renderEntries(entries) {
+    if (!entries || !entries.length) return 0;
+    entries.forEach(entry => {
+      const title = entry.title?.$t || 'Başlık';
+      const link  = (entry.link || []).find(l => l.rel === 'alternate')?.href || '#';
+      const raw   = (entry.summary?.$t || entry.content?.$t || '').replace(/<[^>]+>/g,'').trim();
+      const snippet = raw.length > 140 ? raw.slice(0,140) + '…' : raw;
+      const published = entry.published?.$t ? new Date(entry.published.$t) : null;
+
+      const a = document.createElement('a');
+      a.className = 'post-card';
+      a.href = link;
+      a.target = '_blank';
+      a.rel = 'noopener';
+
+      a.innerHTML =
+        `<div class="post-meta">${published ? published.toLocaleDateString('tr-TR') : ''}</div>
+         <h4>${title}</h4>
+         <p>${snippet}</p>`;
+
+      listEl.appendChild(a);
+    });
+    return entries.length;
+  }
+
+  // JSONP fallback (CORS yok sayılır)
+  function loadPostsJSONP() {
+    return new Promise(resolve => {
+      const cbName = 'blogFeedCb_' + Date.now();
+      window[cbName] = data => {
+        try {
+          const count = renderEntries(data?.feed?.entry || []);
+          if (count < PAGE_SIZE) {
+            endReached = true;
+            loaderEl.textContent = 'Tüm yazılar yüklendi.';
+          } else {
+            startIndex += PAGE_SIZE;
+            loaderEl.textContent = 'Daha fazla yükleniyor…';
+          }
+        } finally {
+          delete window[cbName];
+          script.remove();
+          resolve();
+        }
       };
-
-      s.onerror = () => {
-        reject(new Error('JSONP failed'));
-        delete window[cbName];
-        s.remove();
-      };
-
-      // Blogger: alt=json-in-script & callback
-      s.src = url + (url.includes('?') ? '&' : '?') + 'alt=json-in-script&callback=' + cbName;
-      document.head.appendChild(s);
+      const script = document.createElement('script');
+      script.src = feedUrlJSONP(startIndex, cbName);
+      script.onerror = () => { loaderEl.textContent = 'Yazılar yüklenemedi 😞'; resolve(); };
+      document.body.appendChild(script);
     });
   }
 
-  function entryToCard(entry){
-    const title = entry?.title?.$t || 'Başlık';
-    const linkObj = (entry.link || []).find(l => l.rel === 'alternate');
-    const link = linkObj ? linkObj.href : '#';
-    const raw = ((entry.content && entry.content.$t) || (entry.summary && entry.summary.$t) || '').replace(/<[^>]+>/g,'');
-    const snippet = raw.length > 140 ? raw.slice(0,140) + '…' : raw;
-    const published = entry?.published?.$t ? new Date(entry.published.$t) : null;
-
-    const a = document.createElement('a');
-    a.href = link;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.className = 'post-card';
-    a.innerHTML =
-      '<div class="post-meta">' + (published ? published.toLocaleDateString('tr-TR') : '') + '</div>' +
-      '<h4>' + title + '</h4>' +
-      '<p>' + snippet + '</p>';
-    return a;
-  }
-
-  async function loadPosts(){
+  async function loadPosts() {
     if (loading || endReached) return;
     loading = true;
     loaderEl.style.display = 'block';
 
-    // DÜZGÜN URL: /feeds/posts/default/-/LABEL
-    const url = `${BLOG_BASE}/feeds/posts/default/-/${encodeURIComponent(TAG)}?max-results=${PAGE_SIZE}&start-index=${startIndex}`;
-
+    const url = feedUrlJSON(startIndex);
     try {
-      const data = await jsonp(url);
-      const entries = (data.feed && data.feed.entry) ? data.feed.entry : [];
-
-      entries.forEach(e => listEl.appendChild(entryToCard(e)));
-
-      if (entries.length >= PAGE_SIZE){
-        startIndex += PAGE_SIZE;
-        loaderEl.textContent = 'Daha fazla yükleniyor…';
-      } else {
+      // Önce native JSON dene (aynı domain veya CORS açıksa çalışır)
+      const res = await fetch(url, { credentials: 'omit' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const count = renderEntries(data?.feed?.entry || []);
+      if (count < PAGE_SIZE) {
         endReached = true;
         loaderEl.textContent = 'Tüm yazılar yüklendi.';
-        io.unobserve(loaderEl);
+      } else {
+        startIndex += PAGE_SIZE;
+        loaderEl.textContent = 'Daha fazla yükleniyor…';
       }
-    } catch (err) {
-      console.error(err);
-      loaderEl.textContent = 'Yazılar yüklenemedi 😞';
+    } catch (e) {
+      // CORS/format sorununda JSONP fallback
+      await loadPostsJSONP();
     } finally {
       loading = false;
     }
   }
 
-  // Sonsuz kaydırma
   const io = new IntersectionObserver((ents) => {
     ents.forEach(e => { if (e.isIntersecting) loadPosts(); });
-  }, { root:null, rootMargin:'1200px', threshold:0 });
+  }, { root: null, rootMargin: '800px', threshold: 0 });
 
   io.observe(loaderEl);
   loadPosts();
