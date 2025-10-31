@@ -324,46 +324,101 @@
     filterTypes(); filterGoals();
 
     // === Infinite Scroll Blogger Feed ===
-    const BLOG_URL = 'https://tr.tabirly.com/feeds/posts/default?alt=rss'; // <- değiştir
-    const TAG = 'meditasyon';
-    let startIndex = 1; let endReached = false; let loading = false;
+<!-- === Infinite Scroll Blogger Feed (JSONP, GitHub uyumlu) === -->
+<script>
+  const BLOG_BASE   = 'https://tr.tabirly.com';   // Blogger custom domain
+  const TAG         = 'meditasyon';               // Blogger etiket adı (Label)
+  const PAGE_SIZE   = 6;
 
-    async function loadPosts() {
-      if (loading || endReached) return; loading = true;
-      const loader = document.getElementById('loader');
-      loader.style.display = 'block';
-      const url = BLOG_URL + '/feeds/posts/default/-/' + encodeURIComponent(TAG) + '?alt=json&max-results=6&start-index=' + startIndex;
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        const entries = (data.feed && data.feed.entry) ? data.feed.entry : [];
-        const container = document.getElementById('postsList');
-        entries.forEach(function(entry){
-          const title = (entry.title && entry.title.$t) ? entry.title.$t : 'Başlık';
-          const linkObj = (entry.link||[]).find(function(l){return l.rel === 'alternate'});
-          const link = linkObj ? linkObj.href : '#';
-          const raw = ((entry.content && entry.content.$t) || (entry.summary && entry.summary.$t) || '').replace(/<[^>]+>/g,'');
-          const snippet = raw.length > 140 ? raw.slice(0,140) + '…' : raw;
-          const published = (entry.published && entry.published.$t) ? new Date(entry.published.$t) : null;
-          const card = document.createElement('a');
-          card.href = link; card.className = 'post-card'; card.target = '_blank'; card.rel = 'noopener noreferrer';
-          card.innerHTML = '<div class="post-meta">'+ (published ? published.toLocaleDateString('tr-TR') : '') +'</div>'+'<h4>'+ title +'</h4>'+'<p>'+ snippet +'</p>';
-          container.appendChild(card);
-        });
-        if (entries.length >= 6) { startIndex += 6; loader.textContent = 'Daha fazla yükleniyor…'; }
-        else { endReached = true; loader.textContent = 'Tüm yazılar yüklendi.'; }
-      } catch (err) {
-        document.getElementById('loader').textContent = 'Yazılar yüklenemedi 😞';
-        console.error(err);
-      } finally { loading = false; }
+  let startIndex = 1;
+  let endReached = false;
+  let loading = false;
+  let cbId = 0;
+
+  const loaderEl = document.getElementById('loader');
+  const listEl   = document.getElementById('postsList');
+
+  // JSONP helper (CORS yok; GitHub Pages için şart)
+  function jsonp(url){
+    return new Promise((resolve, reject) => {
+      const cbName = '__blog_cb_' + (cbId++);
+      const s = document.createElement('script');
+
+      window[cbName] = (data) => {
+        resolve(data);
+        delete window[cbName];
+        s.remove();
+      };
+
+      s.onerror = () => {
+        reject(new Error('JSONP failed'));
+        delete window[cbName];
+        s.remove();
+      };
+
+      // Blogger: alt=json-in-script & callback
+      s.src = url + (url.includes('?') ? '&' : '?') + 'alt=json-in-script&callback=' + cbName;
+      document.head.appendChild(s);
+    });
+  }
+
+  function entryToCard(entry){
+    const title = entry?.title?.$t || 'Başlık';
+    const linkObj = (entry.link || []).find(l => l.rel === 'alternate');
+    const link = linkObj ? linkObj.href : '#';
+    const raw = ((entry.content && entry.content.$t) || (entry.summary && entry.summary.$t) || '').replace(/<[^>]+>/g,'');
+    const snippet = raw.length > 140 ? raw.slice(0,140) + '…' : raw;
+    const published = entry?.published?.$t ? new Date(entry.published.$t) : null;
+
+    const a = document.createElement('a');
+    a.href = link;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = 'post-card';
+    a.innerHTML =
+      '<div class="post-meta">' + (published ? published.toLocaleDateString('tr-TR') : '') + '</div>' +
+      '<h4>' + title + '</h4>' +
+      '<p>' + snippet + '</p>';
+    return a;
+  }
+
+  async function loadPosts(){
+    if (loading || endReached) return;
+    loading = true;
+    loaderEl.style.display = 'block';
+
+    // DÜZGÜN URL: /feeds/posts/default/-/LABEL
+    const url = `${BLOG_BASE}/feeds/posts/default/-/${encodeURIComponent(TAG)}?max-results=${PAGE_SIZE}&start-index=${startIndex}`;
+
+    try {
+      const data = await jsonp(url);
+      const entries = (data.feed && data.feed.entry) ? data.feed.entry : [];
+
+      entries.forEach(e => listEl.appendChild(entryToCard(e)));
+
+      if (entries.length >= PAGE_SIZE){
+        startIndex += PAGE_SIZE;
+        loaderEl.textContent = 'Daha fazla yükleniyor…';
+      } else {
+        endReached = true;
+        loaderEl.textContent = 'Tüm yazılar yüklendi.';
+        io.unobserve(loaderEl);
+      }
+    } catch (err) {
+      console.error(err);
+      loaderEl.textContent = 'Yazılar yüklenemedi 😞';
+    } finally {
+      loading = false;
     }
+  }
 
-    const io = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){ if(e.isIntersecting) loadPosts(); });
-    }, {root:null, rootMargin:'1200px', threshold:0});
-    io.observe(document.getElementById('loader'));
-    loadPosts();
-  </script>
+  // Sonsuz kaydırma
+  const io = new IntersectionObserver((ents) => {
+    ents.forEach(e => { if (e.isIntersecting) loadPosts(); });
+  }, { root:null, rootMargin:'1200px', threshold:0 });
+
+  io.observe(loaderEl);
+  loadPosts();
+</script>
 </body>
 </html>
